@@ -1,0 +1,6 @@
+        option wps_pushbutton '1'
+        option wps_rf_bands 'a'
+        option encryption 'psk2'
+        option wav_beacon_type '11i'
+        option wav_encryption_mode 'aes'
+        option wav_security_mode 'WPA2-Personal'
