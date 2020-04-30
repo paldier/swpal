@@ -1109,9 +1109,10 @@ int uci_converter_get_str(enum paramType type, int index, const char param[], ch
  *  \param[in] int index - radio or VAP index (regular index, not UCI index)
  *  \param[in] const char param[] - param name to get (not full path)
  *  \param[out] char *value - string value from UCI DB 
+ *  \param[in] size_t *size - size of value buffer
  *  \param[in] char *default_val - in case not found return this value as default
  ***************************************************************************/
-void uci_converter_get_optional_str(enum paramType type, int index, const char param[], char *value, char* default_val)
+void uci_converter_get_optional_str(enum paramType type, int index, const char param[], char *value, size_t size, char* default_val)
 {
 	int status;
 
@@ -1122,7 +1123,7 @@ void uci_converter_get_optional_str(enum paramType type, int index, const char p
 
 	status = uci_converter_get_str(type, index, param, value);
 	if (status == RETURN_ERR)
-		strncpy_s(value, MAX_UCI_BUF_LEN, default_val, MAX_UCI_BUF_LEN - 1);
+		strncpy_s(value, size, default_val, strnlen_s(default_val, size - 1));
 }
 
 /**************************************************************************/
@@ -1508,7 +1509,7 @@ int uci_converter_set_str(enum paramType type, int index, const char param[], co
 		return RETURN_ERR;
 	}
 
-	uci_converter_get_optional_str(type, index, param, get_value, "");
+	uci_converter_get_optional_str(type, index, param, get_value, MAX_UCI_BUF_LEN, "");
 	if (!strncmp(value, get_value, MAX_UCI_BUF_LEN)) {
 		DEBUG("%s same value being set index=%d %s=%s\n", __func__, index, param, value);
 		return RETURN_OK;

@@ -139,8 +139,8 @@ wlan_factory()
 	echo -e "####### reboot...please wait               ############" > /dev/console
 	echo -e "####### ################################## ############" > /dev/console
 	sleep 5
-	[ "$(systemctl is-active CcspEthAgent)" = "inactive" ] && systemctl start CcspEthAgent
-	[ "$(systemctl is-active CcspPandMSsp)" = "inactive" ] && systemctl start CcspPandMSsp
+	systemctl start CcspEthAgent
+	systemctl start CcspPandMSsp
 
 	cd /nvram
 	rm -rf bbhm_* syscfg* etc/config/ etc/fw_dump*
@@ -170,10 +170,21 @@ case $command in
 	"wlan_factroy"|"wf")
 		wlan_factory
 	;;
+	"wlan_collect_debug"|"wcd")
+		${SCRIPTS_PATH}/wave_collect_debug.sh
+	;;
+	"wlan_collect_debug_assert"|"wcda")
+		${SCRIPTS_PATH}/wave_collect_debug.sh -a $pc_ip
+	;;
+	"wlan_collect_debug_config"|"wcdc")
+		${SCRIPTS_PATH}/wave_collect_debug.sh -c
+	;;
 	*)
+
 		[ "$command" = "" ] && command="help"
 		echo -e "$script_name Version:$version: Unknown command $command\n \
 		Usage: $script_name COMMAND [Argument 1] [Argument 2]\n" \
+		"example: wavToolBox wcda 192.168.0.100 \n" \
 		 "\n" \
 		 "Commnads:\n" \
 		 "burn_cal       Burn the calibration files\n" \
@@ -183,11 +194,14 @@ case $command in
 		 "               Names can be specified in a comma-separated list: wlan0,wlan2\n" \
 		 "               This argument can contain also the path in the tftp server before the interface name: /path/wlan\n" \
 		 "               Example: $script_name burn_cal <PC IC> /private_folder/wlan0,wlan2,wlan4\n" \
-		 "remove_cal     Removes /nvram/etc/wave_calibration directory if exists\n" \
-		 "wlan_status   (ws) gives wlan interface main vaps (wlan0.0 and wlan2.0) status\n" \
-		 "overlay       (ov) setting overlay /bin /etc /lib access\n" \
-		 "work_mode     (wm) setting debug work mode - disable un-needed terminal traces \n" \
-		 "wlan_version  (wv) getting wlan version info includes:eeprom,kernel_version,cv \n" \
-		 "wlan_factory  (wf) complete clean-up ( overlay will not be deleted ) \n"
+		 "remove_cal                  Removes /nvram/etc/wave_calibration directory if exists\n" \
+		 "wlan_status                (ws) gives wlan interface main vaps (wlan0.0 and wlan2.0) status\n" \
+		 "overlay                    (ov) setting overlay /bin /etc /lib access\n" \
+		 "work_mode                  (wm) setting debug work mode - disable un-needed terminal traces \n" \
+		 "wlan_version               (wv) getting wlan version info includes:eeprom,kernel_version,cv \n" \
+		 "wlan_factory               (wf) complete clean-up ( overlay will not be deleted ) \n" \
+		 "wlan_collect_debug         (wcd) wlan collect debug info\n" \
+		 "wlan_collect_debug_assert  (wcda) <tftp ip> wlan collect debug info after triggring FW assert and optional upload to tftp\n" \
+		 "wlan_collect_debug_config  (wcdc) Only for RDKB:reconfig the syslog to save all future logs to a single file\n"
 	;;
 esac

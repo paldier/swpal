@@ -10,6 +10,9 @@
 # perform factory for radio wlan0 - wave_factory_reset.sh radio wlan0
 # use alternate db files for the factory - wave_factory_reset.sh -p <alternate directory name>
 # perform factory reset and create user defined number of vaps - wave_factory_reset.sh -v <number of vaps per radio>
+# perform factory and choose which radio is set to which PCI slot - In the general database folder create configuration file name radio_map_file
+#         map file example: radio0 PCI_SLOT01
+#                           radio2 PCI_SLOT02
 #
 
 UCI=`which uci`
@@ -201,6 +204,45 @@ function create_station(){
 	fi
 }
 
+radio_map_file_content=
+get_index_from_map_file_return_value=
+function get_index_from_map_file(){
+	local phy_name=$1
+
+	local pciIndex=$(grep PCI_SLOT_NAME /sys/class/ieee80211/${phy_name}/device/uevent | awk -F":" '{print $2}')
+	local map_line=$(echo "$radio_map_file_content" | grep -nm1 PCI_SLOT${pciIndex})
+	local radio_name=$(echo "$map_line" | awk '{print $1}' | awk -F":" '{print $2}')
+	local line_number=$(echo "$map_line" | awk '{print $1}' | awk -F":" '{print $1}')
+
+	# delete the used line
+	radio_map_file_content=$(echo "$radio_map_file_content" | sed "${line_number}d")
+
+	get_index_from_map_file_return_value=${radio_name//[a-z]/}
+}
+
+function validate_radio_map_file(){
+	if [ ! -f "$RADIO_MAP_FILE" ]; then
+		# no map file supplied
+		return
+	fi
+
+	radio_map_file_content=$(cat $RADIO_MAP_FILE)
+	local radio_index
+	local phys=`ls /sys/class/ieee80211/`
+	for phy in $phys; do
+		get_index_from_map_file $phy
+		radio_index=$get_index_from_map_file_return_value
+		if [ -z $radio_index ]; then
+			echo "RADIO_MAP_FILE is invalid. not using it" > /dev/console
+			radio_map_file_content=
+			return
+		fi
+	done
+
+	echo "using radio map configuration file" > /dev/console
+	radio_map_file_content=$(cat $RADIO_MAP_FILE)
+}
+
 function full_reset(){
 
 	echo "$0: Performing full factory reset..." > /dev/console
@@ -236,8 +278,15 @@ function full_reset(){
 	local tmp_wireless=$(mktemp /tmp/wireless.XXXXXX)
 	local tmp_meta=$(mktemp /tmp/meta-wireless.XXXXXX)
 
+	validate_radio_map_file
+
 	# Fill Radio interfaces
 	for phy in $phys; do
+		if [ -n "$radio_map_file_content" ]; then
+			get_index_from_map_file $phy
+			iface_idx=$get_index_from_map_file_return_value
+		fi
+
 		iface="wlan$iface_idx"
 		new_mac=`update_mac_address $iface`
 		`iw $phy info | grep "* 5... MHz" > /dev/null`

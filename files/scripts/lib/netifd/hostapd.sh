@@ -145,9 +145,10 @@ hostapd_common_add_device_config() {
 	config_add_boolean legacy_rates
 	config_add_int sub_band_dfs
 	config_add_int sRadarRssiTh
-	config_add_int sDisableMasterVap
 	config_add_int sta_statistics
 	config_add_string sCoCPower
+	config_add_string sCoCAutoCfg
+	config_add_string sErpSet
 	config_add_string sFWRecovery
 	config_add_string sFixedRateCfg
 	config_add_int num_antennas
@@ -169,8 +170,8 @@ hostapd_prepare_device_config() {
 
 	json_get_vars country country_ie beacon_int:100 doth require_mode legacy_rates \
 					dfs_debug_chan externally_managed testbed_mode \
-					sub_band_dfs sCoCPower sFWRecovery sFixedRateCfg \
-					sRadarRssiTh band sDisableMasterVap num_antennas \
+					sub_band_dfs sCoCPower sCoCAutoCfg sErpSet FWRecovery sFixedRateCfg \
+					sRadarRssiTh band num_antennas \
 					sta_statistics rts_threshold
         json_get_var sPowerSelection txpower
 
@@ -190,16 +191,12 @@ hostapd_prepare_device_config() {
 		*) sPowerSelection= ;;
 	esac
 
-	if [ -n "$num_antennas" ]; then
-		append base_cfg "sCoCPower=0 $num_antennas $num_antennas" "$N"
-	elif [ -n "$sCoCPower" ]; then
-		append base_cfg "sCoCPower=$sCoCPower" "$N"
-	fi
-
+	[ -n "$sCoCPower" ] && append base_cfg "sCoCPower=$sCoCPower" "$N"
+	[ -n "$sCoCAutoCfg" ] && append base_cfg "sCoCAutoCfg=$sCoCAutoCfg" "$N"
+	[ -n "$sErpSet" ] && append base_cfg "sErpSet=$sErpSet" "$N"
 	[ -n "$sPowerSelection" ] && append base_cfg "sPowerSelection=$sPowerSelection" "$N"
 	[ -n "$sFWRecovery" ] && append base_cfg "sFWRecovery=$sFWRecovery" "$N"
 	[ -n "$sFixedRateCfg" ] && append base_cfg "sFixedRateCfg=$sFixedRateCfg" "$N"
-	[ -n "$sDisableMasterVap" ] && append base_cfg "sDisableMasterVap=$sDisableMasterVap" "$N"
 	[ -n "$sta_statistics" ] && append base_cfg "sStationsStat=$sta_statistics" "$N"
 	[ -n "$rts_threshold" ] && append base_cfg "rts_threshold=$rts_threshold" "$N"
 
@@ -458,7 +455,7 @@ hostapd_set_bss_options() {
 	set_default acct_port 1813
 	set_default sec_acct_port 1813
 	set_default mbo 1
-	set_default rrm_neighbor_report 1
+	set_default rrm_neighbor_report 0
 	set_default bss_transition 1
 	set_default interworking 1
 	set_default access_network_type 0
@@ -496,13 +493,13 @@ hostapd_set_bss_options() {
 	if [ "$num_res_sta" -gt 0 ]; then
 		append bss_conf "num_res_sta=$num_res_sta" "$N"
 	fi
-	if [ "$gas_comeback_delay" -gt 0 ]; then
+	if [ "$gas_comeback_delay" -gt "0" ]; then
 		append bss_conf "gas_comeback_delay=$gas_comeback_delay" "$N"
 	fi
-	if [ "$rrm_neighbor_report" -gt 0 ]; then
+	if [ "$rrm_neighbor_report" -gt "0" ]; then
 		append bss_conf "rrm_neighbor_report=$rrm_neighbor_report" "$N"
 	fi
-	if [ "$bss_transition" -gt 0 ]; then
+	if [ "$bss_transition" -gt "0" ]; then
 		append bss_conf "bss_transition=$bss_transition" "$N"
 	fi
 
@@ -762,7 +759,7 @@ hostapd_set_bss_options() {
 		set_default wps_independent 1
 		set_default wps_state 2
 
-		if [ "$ext_registrar" -gt 0 -a -n "$network_bridge" ]; then
+		if [ "$ext_registrar" -gt "0" ] && [ -n "$network_bridge" ]; then
 			append bss_conf "upnp_iface=$network_bridge" "$N"
 		elif [ -n "$upnp_bridge" ]; then
 			append bss_conf "upnp_iface=$upnp_bridge" "$N"

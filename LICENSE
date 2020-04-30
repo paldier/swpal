@@ -1,10 +1,12 @@
 S-WPAL is distributed with two licenses:
 Code that links with uci is released with the LGPLv2.1 license.
-This includes all C code in the src/ folder.
+This includes all C code in the src/ folder, excluding the src/lite_nc folder.
 
 Scripts that extend the OpenWRT functionality are released under GPLv2.
-This includes all code/scripts in the files/ folder.
+This includes all code and scripts in the files/ folder.
 
+The nc_lite application is a restricted version of nc, based on the busybox implementation of nc and released under GPLv2.
+This includes all C code in the src/lite_nc folder.
 
 ==========================================================================
 

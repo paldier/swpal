@@ -9,3 +9,4 @@
 		option beacon_int '100'
 		option txpower '100'
 		option sDisableMasterVap '1'
+		option obss_interval '300'

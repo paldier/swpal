@@ -104,7 +104,7 @@ int uci_converter_system(char *cmd);
 int uci_converter_popen(char *cmd, char *output, unsigned int outputSize);
 int uci_converter_get(char* path, char* value, size_t length);
 int uci_converter_get_str(enum paramType type, int index, const char param[], char *value);
-void uci_converter_get_optional_str(enum paramType type, int index, const char param[], char *value, char* default_val);
+void uci_converter_get_optional_str(enum paramType type, int index, const char param[], char *value, size_t size, char* default_val);
 int uci_converter_get_int(enum paramType type, int index, const char param[], int *value);
 void uci_converter_get_optional_int(enum paramType type, int index, const char param[], int *value, int default_val);
 int uci_converter_get_uint(enum paramType type, int index, const char param[], unsigned int *value);

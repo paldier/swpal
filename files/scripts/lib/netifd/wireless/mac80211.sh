@@ -92,8 +92,9 @@ drv_mac80211_init_device_config() {
 		dsss_cck_40
 	config_add_boolean atf
 	config_add_int atf_interval atf_free_time atf_debug
-	config_add_int obss_interval ignore_40_mhz_intolerant
+	config_add_int obss_interval obss_beacon_rssi_threshold ignore_40_mhz_intolerant
 	config_add_boolean full_ch_master_control
+	config_add_string ap_retry_limit
 
 	if [ -f /lib/netifd/debug_infrastructure.sh ]; then
 		config_add_string hostapd_log_level
@@ -561,14 +562,18 @@ mac80211_hostapd_setup_base() {
 	mac80211_append_ax_parameters
 
 	[ "$auto_channel" -gt 0 ] && {
-		json_get_vars acs_smart_info_file acs_history_file
+		json_get_vars acs_smart_info_file acs_history_file obss_beacon_rssi_threshold
 
 		set_default acs_smart_info_file "/var/run/acs_smart_info_wlan${phy#phy}.txt"
 		set_default acs_history_file "/var/run/acs_history_wlan${phy#phy}.txt"
 		append base_cfg "acs_num_scans=1" "$N"
 		append base_cfg "acs_smart_info_file=$acs_smart_info_file" "$N"
 		append base_cfg "acs_history_file=$acs_history_file" "$N"
+		[ -n "$obss_beacon_rssi_threshold" ] && append base_cfg "obss_beacon_rssi_threshold=$obss_beacon_rssi_threshold" "$N"
 	}
+
+	json_get_vars ap_retry_limit
+	[ -n "$ap_retry_limit" ] && append base_cfg "ap_retry_limit=$ap_retry_limit" "$N"
 
 	if [ -f /lib/netifd/debug_infrastructure.sh ]; then
 		debug_infrastructure_json_get_vars debug_hostap_conf_

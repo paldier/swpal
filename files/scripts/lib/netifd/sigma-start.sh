@@ -1,13 +1,14 @@
 #!/bin/sh
 
+listenPort=9000
 . /lib/wifi/platform_dependent.sh
+. /lib/netifd/sigma-ap.sh
 
 HOSTAPD_CLI_CMD=hostapd_cli
 if [ "$OS_NAME" = "UGW" ]; then
 	HOSTAPD_CLI_CMD="sudo -u nwk -- $HOSTAPD_CLI_CMD"
 fi
 
-listenPort=9000
 procName=$0
 
 # clean unused process
@@ -15,7 +16,23 @@ ownPid=$$
 sigmaStartPid=`ps | grep "$0" | grep -v "grep" | grep -v "$ownPid" | awk '{ print $1 }'`
 kill $sigmaStartPid
 
-killall sigma-ap.sh
+kill_sigma_ap()
+{
+	killwatchdog=0
+	daemon_pid=`ps | grep sigma-ap.sh | grep -v grep | awk '{ print $1 }' | tr  '\n' ' '`
+	while [ "$daemon_pid" != "" ]; do
+		for p in $daemon_pid
+		do
+			pidtoKill=$p
+			kill "$pidtoKill"
+		done
+		daemon_pid=`ps | grep sigma-ap.sh | grep -v grep | awk '{ print $1 }' | tr  '\n' ' '`
+		let killwatchdog=killwatchdog+1
+	done
+}
+
+kill_sigmaManagerDaemon
+kill_sigma_ap
 
 if [ -z `ls $NC_COMMAND` ]; then
 	NC_COMMAND=`cat /tmp/lite_nc_location`
@@ -43,17 +60,20 @@ else
 	chmod +x "$NC_COMMAND"
 fi
 
-ncPid=`ps | grep "busybox nc -l -p $listenPort" | grep -v "grep" | awk '{ print $1 }'`
-kill "$ncPid"
-ncPid=`ps | grep "lite_nc" | grep -v "grep" | awk '{ print $1 }'`
+ncPid=`ps | grep "light_nc" | grep -v "grep" | awk '{ print $1 }'`
+if [ "$ncPid" = "" ]; then
+	ncPid=`ps | grep "busybox nc -l -p $listenPort" | grep -v "grep" | awk '{ print $1 }'`
+fi
 kill "$ncPid"
 
 if [ "$OS_NAME" = "RDKB" ]; then
 	iptables -t mangle -D FORWARD -m state ! --state NEW -j DSCP --set-dscp 0x00
 	iptables -t mangle -D FORWARD -m state --state NEW -j DSCP --set-dscp 0x14
 elif [ "$OS_NAME" = "UGW" ]; then
-	iptables -I zone_wan_input -p tcp --dport $listenPort -j ACCEPT
-	iptables -I zone_lan_input -p tcp --dport $listenPort -j ACCEPT
+	PROTO=tcp                # The PROTO can be ‘tcp’ or ‘udp’
+	DPORT=9000
+	ubus call firewalld notify_firewall_change '{ "rule1" : "iptables -I zone_wan_input -p '$PROTO' --dport '$DPORT' -j ACCEPT" }'
+	ubus call firewalld notify_firewall_change '{ "rule2" : "iptables -I zone_lan_input -p '$PROTO' --dport '$DPORT' -j ACCEPT" }'
 fi
 
 dirname() {
