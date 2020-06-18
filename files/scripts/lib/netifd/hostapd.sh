@@ -979,7 +979,7 @@ wpa_supplicant_prepare_interface() {
 
 	_wpa_supplicant_common "$1"
 
-	json_get_vars mode wds vendor_elems
+	json_get_vars mode wds vendor_elems config_methods
 
 	[ -n "$network_bridge" ] && {
 		fail=
@@ -1024,8 +1024,15 @@ wpa_supplicant_prepare_interface() {
 		wds_str="wds=$wds"
 	}
 
+	local config_methods_str=
+	[ -n "$config_methods" ] && {
+		config_methods_str="config_methods=$config_methods"
+	}
+
 	wpa_supplicant_teardown_interface "$ifname"
 	cat > "$_config" <<EOF
+ctrl_interface=/var/run/wpa_supplicant
+$config_methods_str
 $ap_scan
 $country_str
 $vendor_elems_str

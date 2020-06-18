@@ -116,6 +116,7 @@ drv_mac80211_init_iface_config() {
 	config_add_int atf_vap_grant
 	config_add_array 'atf_sta_grants:list(macaddr,int)'
 	config_add_string vendor_elems
+	config_add_string config_methods
 
 	# mesh
 	config_add_string mesh_id
